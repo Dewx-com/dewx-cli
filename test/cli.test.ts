@@ -143,7 +143,7 @@ test('skills install copies every skill folder, after a yes', async () => {
   const dest = join(s.dir, 'claude-skills')
   assert.equal(await s.run('skills', 'install', '--dir', dest, '--yes'), 0)
   for (const n of ['dewx-write-messages', 'dewx-lead-research', 'dewx-list-builder', 'dewx-reply-handler'])
-    assert.match(readFileSync(join(dest, n, 'SKILL.md'), 'utf8'), new RegExp(`^---\\nname: ${n}\\n`))
+    assert.match(readFileSync(join(dest, n, 'SKILL.md'), 'utf8'), new RegExp(`^---\\r?\\nname: ${n}\\r?\\n`))
 })
 
 test('messages: list, approve --all takes only clean drafts, edit, skip', async () => {

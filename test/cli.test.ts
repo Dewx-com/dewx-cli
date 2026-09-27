@@ -165,3 +165,28 @@ test('messages: list, approve --all takes only clean drafts, edit, skip', async 
   assert.equal(await s.run('messages', 'approve', 'm-clean'), 2, 'no terminal, no --yes: refused')
   assert.equal(s.api.calls().length, before)
 })
+
+test('ai: prices; write shows the cost first and asks; --quote runs nothing; a receipt after', async () => {
+  const receipt = { text: 'Write a message · DeepSeek Flash · 3,376 in (2,433 cached) · 250 out · AI company $0.000597 · our 10% $0.000059 · $0.000657' }
+  const s = loggedIn({
+    ai_prices: () => ({ mode: 'manual', rule: 'You pay what the AI company charges us for your words, plus 10%.', model: 'deepseek-flash', capCents: 1000,
+      month: { actions: 1, totalNanos: 657247 }, recent: [{ at: '2026-09-27T03:00:00Z', line: receipt.text }],
+      models: [{ model: 'deepseek-flash', label: 'DeepSeek Flash', available: true, hint: 'about 0.066¢ per message', perMillionUsd: { miss: 0.33, out: 1.32 } },
+        { model: 'claude-haiku', label: 'Claude Haiku', available: false, why: 'Not available yet.' }],
+      actions: [{ button: 'Write this with AI', estimate: 'about 0.066¢' }] }),
+    ai_write_message: a => a.quote ? { quote: true, estimate: 'Write a message with DeepSeek Flash: about 0.066¢, our 10% included' }
+      : { ok: true, text: 'Hi Ana, fictional draft.', receipt },
+  })
+  assert.equal(await s.run('ai'), 0)
+  assert.match(s.out.join('\n'), /\* DeepSeek Flash: about 0\.066¢ per message[\s\S]*Claude Haiku: Not available yet[\s\S]*of your \$10\.00 cap/)
+  assert.equal(await s.run('ai', 'write', 'lead-1', '--quote'), 0)
+  assert.deepEqual(s.api.calls().at(-1)!.arguments, { lead_id: 'lead-1', quote: true })
+  const n = s.api.calls().length
+  assert.equal(await s.run('ai', 'write', 'lead-1'), 2, 'no terminal, no --yes: refused after the quote')
+  assert.equal(s.api.calls().length, n + 1, 'only the quote went out')
+  assert.equal(await s.run('ai', 'write', 'lead-1', '-y'), 0)
+  const last = s.api.calls().at(-1)!.arguments
+  assert.equal(last.lead_id, 'lead-1'); assert.match(last.request_id, /^cli-/); assert.equal(last.quote, undefined)
+  assert.match(s.out.join('\n'), /Hi Ana, fictional draft\.[\s\S]*our 10% \$0\.000059 · \$0\.000657/)
+  assert.match(s.err.join('\n'), /about 0\.066¢/)
+})

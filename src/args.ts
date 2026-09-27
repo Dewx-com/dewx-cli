@@ -5,7 +5,7 @@ export type Flags = Record<string, string | boolean>
 export type Parsed = { args: string[], flags: Flags }
 
 /** Flags that never take a value. Every other --flag takes the next word as its value. */
-const BOOLEAN = new Set(['json', 'yes', 'help', 'version', 'debug', 'dry-run', 'oldest', 'file', 'all', 'approved'])
+const BOOLEAN = new Set(['json', 'yes', 'help', 'version', 'debug', 'dry-run', 'oldest', 'file', 'all', 'approved', 'quote'])
 const SHORT: Record<string, string> = { y: 'yes', h: 'help', v: 'version', j: 'json' }
 
 export function parse(argv: readonly string[]): Parsed {

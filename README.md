@@ -109,6 +109,10 @@ Claude Desktop says the server failed? It often cannot find `npx` when Node was 
 | `dewx messages approve <id...>` | Approve (or `--all` for every draft with no flagged rule). Approving sends nothing by itself |
 | `dewx messages edit <id> "text"` | New text; checked again and approved only if it passes |
 | `dewx messages skip <id...>` | Hold back: they will not go unless approved again |
+| `dewx ai` | AI while you run it yourself: your model, its price with our 10%, each action's typical cost, this month against your cap |
+| `dewx ai write <lead-id>` | Write this with AI (`--step m2` for the follow-up). Shows the cost and asks first; saved as a draft for your approval |
+| `dewx ai research <lead-id>` | Research this lead: one fact from their LinkedIn with its link, and why they fit |
+| `dewx ai reply <thread-id>` | Suggest a reply, saved as the draft; nothing is sent. Add `--quote` to any of these to see the cost only |
 | `dewx templates set` | `--note --m1 --m2` or `--file templates.json`. Variables use single braces: `{first_name}` `{company}` `{title}` |
 | `dewx inbox` | Your conversations. `--oldest` puts the people waiting on you first |
 | `dewx inbox read <id>` | One conversation, oldest message first |

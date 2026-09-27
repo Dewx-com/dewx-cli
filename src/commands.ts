@@ -252,6 +252,39 @@ export const COMMANDS: Record<string, Command> = {
     },
   },
 
+  ai: {
+    usage: 'dewx ai [prices | write <lead-id> [--step m2] | research <lead-id> | reply <thread-id>] [--quote]',
+    summary: 'AI while you run it yourself: write a message, research a lead, suggest a reply. The AI company\'s cost plus 10%, shown first.',
+    async run(c) {
+      const sub = c.args[0] ?? 'prices'
+      if (sub === 'prices') {
+        const r = await api(c).tool('ai_prices', {})
+        const cap = (n: number) => `$${(n / 100).toFixed(2)}`
+        return show(c, r, () => [r.rule, '',
+          ...r.models.map((m: any) => `${m.model === r.model ? '*' : ' '} ${m.label}: ${m.available ? `${m.hint}; per 1M tokens with our fee: in $${m.perMillionUsd.miss}, out $${m.perMillionUsd.out}` : m.why}`),
+          '', ...r.actions.map((a: any) => `${a.button}: ${a.estimate}`),
+          '', `This month: ${r.month.actions} AI actions, $${(r.month.totalNanos / 1e9).toFixed(4)} of your ${cap(r.capCents)} cap.`,
+          ...(r.recent.length ? ['', ...r.recent.map((x: any) => `${day(x.at)}  ${x.line}`)] : []),
+          ...(r.mode === 'dew' ? ['', 'Dew runs your campaign now, so AI is included and nothing here is charged.'] : [])].join('\n'))
+      }
+      const TOOL: Record<string, [string, string]> = { write: ['ai_write_message', 'lead_id'], research: ['ai_research_lead', 'lead_id'], reply: ['ai_suggest_reply', 'thread_id'] }
+      const t = TOOL[sub]
+      if (!t) throw new UsageError(`unknown: ai ${sub}. Try: prices, write, research, reply`)
+      const args: Record<string, unknown> = { [t[1]]: need(c.args[1], t[1] === 'lead_id' ? 'the lead id' : 'the thread id'),
+        ...(sub === 'write' && str(c.flags, 'step') === 'm2' ? { step: 'm2' } : {}) }
+      const q = await api(c).tool(t[0], { ...args, quote: true })
+      if (c.flags.quote === true) return show(c, q, () => q.estimate)
+      if (!await confirm(c, [`${q.estimate}`, 'Paid from your wallet: what the AI company charges, plus 10%. A result that fails our checks is free'])) return
+      const r = await api(c).tool(t[0], { ...args, request_id: `cli-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` })
+      return show(c, r, () => [
+        ...(r.text ? [r.text, ''] : []),
+        ...(r.reason && sub === 'research' ? [r.reason, ...(r.fact ? [`${r.fact.text} (${r.fact.sourceUrl})`] : []), ''] : []),
+        r.ok ? (sub === 'reply' ? 'Saved as the reply draft. Nothing was sent.' : sub === 'write' ? 'Saved as a draft for your approval (dewx messages).' : 'Kept on the lead.')
+          : 'No usable result, so nothing was charged.',
+        r.receipt.text].join('\n'))
+    },
+  },
+
   messages: {
     usage: 'dewx messages [list [--approved] | approve <id...> | approve --all | edit <id> <text> | skip <id...>]',
     summary: 'Drafts waiting for you: read them, approve, edit or skip. A campaign only sends approved messages.',

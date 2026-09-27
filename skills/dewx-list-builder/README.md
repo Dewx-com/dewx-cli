@@ -1,0 +1,3 @@
+**What:** turns a plain-words ICP into LinkedIn Sales Navigator filters and a ready search link (`build-url.mjs`, no dependencies), with the expected list size and noise.
+**Install:** Claude: `npx dewx skills install` (or copy this folder to `~/.claude/skills/`, or zip it and upload in Claude Settings, Skills). ChatGPT: new GPT, paste `SKILL.md` into Instructions, upload `filters.json` and `build-url.mjs` as Knowledge, turn on Code Interpreter. Any other AI: paste `SKILL.md` and `filters.json`.
+**Example:** "I sell bookkeeping to US law firms with 10 to 50 people. Find me the partners who run the business side."

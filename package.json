@@ -1,0 +1,22 @@
+{
+  "name": "dewx",
+  "version": "0.1.0",
+  "description": "Run your dewx.ai LinkedIn campaign from the terminal, and connect Claude or any MCP client to it.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "dewx": "dist/src/cli.js" },
+  "files": ["dist/src", "skills", "README.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc",
+    "test": "tsc && node --test dist/test/*.test.js",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": ["dewx", "linkedin", "outreach", "cli", "mcp", "model-context-protocol", "claude"],
+  "homepage": "https://github.com/Dewx-com/dewx-cli#readme",
+  "repository": { "type": "git", "url": "git+https://github.com/Dewx-com/dewx-cli.git" },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -187,7 +187,7 @@ export const COMMANDS: Record<string, Command> = {
         if (!await confirm(c, ['Start your campaign: invites and messages go out from your LinkedIn, inside its daily limits ' +
           'and office hours, through the dewx.ai safety checks'])) return
         const r = await api(c).tool('start_campaign').catch(e => {
-          if (/approve/i.test(e.message)) e.message += '\nApprove your first messages in the app (Campaign), then run this again.'
+          if (/approve/i.test(e.message)) e.message += '\nSee them: dewx messages. Approve: dewx messages approve --all. Then run this again.'
           throw e
         })
         return show(c, r, () => `Campaign is ${r.status}. Pause any time: dewx campaigns pause`)
@@ -249,6 +249,52 @@ export const COMMANDS: Record<string, Command> = {
     async run(c) {
       const r = await api(c).tool('get_job', { id: need(c.args[0], 'the job id') })
       show(c, r, () => [`Status: ${r.status}`, ...(r.error ? [`Error: ${r.error}`] : []), ...(r.result ? [`Result: ${JSON.stringify(r.result)}`] : [])].join('\n'))
+    },
+  },
+
+  messages: {
+    usage: 'dewx messages [list [--approved] | approve <id...> | approve --all | edit <id> <text> | skip <id...>]',
+    summary: 'Drafts waiting for you: read them, approve, edit or skip. A campaign only sends approved messages.',
+    async run(c) {
+      const sub = c.args[0] ?? 'list'
+      const waiting = async () => (await api(c).tool('list_messages', { limit: 200 })).messages as any[]
+      if (sub === 'list') {
+        const r = await api(c).tool('list_messages', { limit: 200, ...(c.flags.approved === true ? { status: 'approved' } : {}) })
+        return show(c, r, () => r.messages.length ? [
+          ...r.messages.slice(0, MAX_ROWS).map((m: any) => [`${m.id}  ${m.step}  ${m.lead?.name ?? ''} (${m.lead?.company ?? ''})`,
+            ...String(m.text).split('\n').map((l: string) => `    ${l}`),
+            ...(m.reasons?.length ? [`    ! ${m.reasons.join('; ')}`] : [])].join('\n')),
+          `${r.total} ${c.flags.approved === true ? 'approved, not sent yet' : 'waiting for you'}.${more(r.total).replace('\n', ' ')}`,
+          ...(c.flags.approved === true ? [] : ['Approve: dewx messages approve <id> (or --all for every clean one). Edit: dewx messages edit <id> "text"']),
+        ].join('\n\n') : (c.flags.approved === true ? 'No approved messages waiting to send.' : 'Nothing waiting for you.'))
+      }
+      if (sub === 'approve') {
+        let ids = c.args.slice(1)
+        if (c.flags.all === true) ids = (await waiting()).filter(m => !m.reasons?.length).map(m => m.id)
+        if (!ids.length) throw new UsageError(c.flags.all === true ? 'no clean drafts to approve' : 'give message ids, or --all')
+        if (!await confirm(c, [`Approve ${ids.length} message${ids.length === 1 ? '' : 's'}${c.flags.all === true ? ' (every draft with no flagged rule)' : ''}`,
+          'Approving sends nothing now: the campaign sends them when it runs, through the safety checks'])) return
+        const r = await api(c).tool('approve_messages', { approve: ids.slice(0, 100) })
+        return show(c, r, () => [`Approved ${r.approved.length}.`, ...r.refused.map((x: any) => `  not approved: ${x.id}: ${x.reasons.join('; ')}`),
+          ...(ids.length > 100 ? ['Only the first 100 were sent. Run it again for the rest.'] : [])].join('\n'))
+      }
+      if (sub === 'edit') {
+        const id = need(c.args[1], 'the message id')
+        const text = need(str(c.flags, 'text') ?? c.args.slice(2).join(' '), 'the new text').replace(/\\n/g, '\n')
+        if (!await confirm(c, [`Change message ${id} to:`, `"${text}"`, 'It is checked again and approved only if it passes'])) return
+        const r = await api(c).tool('approve_messages', { edit: [{ id, text }] })
+        const e = r.edited?.[0]
+        return show(c, r, () => r.refused?.length ? `Not changed: ${r.refused[0].reasons.join('; ')}`
+          : e?.approved ? 'Saved and approved.' : `Saved, not approved: ${(e?.reasons ?? []).join('; ')}`)
+      }
+      if (sub === 'skip') {
+        const ids = c.args.slice(1)
+        if (!ids.length) throw new UsageError('give message ids')
+        if (!await confirm(c, [`Hold back ${ids.length} message${ids.length === 1 ? '' : 's'}: they will not go unless you approve them again`])) return
+        const r = await api(c).tool('approve_messages', { skip: ids })
+        return show(c, r, () => [`Skipped ${r.skipped.length}.`, ...r.refused.map((x: any) => `  not skipped: ${x.id}: ${x.reasons.join('; ')}`)].join('\n'))
+      }
+      throw new UsageError(`unknown: messages ${sub}. Try: list, approve, edit, skip`)
     },
   },
 

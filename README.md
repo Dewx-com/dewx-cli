@@ -39,9 +39,11 @@ dewx leads import leads.csv                                    # your own list o
 dewx leads salesnav "https://www.linkedin.com/sales/search/people?query=..." --limit 200
 ```
 
-**5. Start it.**
+**5. Approve the first messages, then start.**
 
 ```sh
+dewx messages                    # the drafts waiting for you, with any rule one breaks
+dewx messages approve --all      # approves every clean draft (or give ids; edit one with: dewx messages edit <id> "text")
 dewx campaigns start
 ```
 
@@ -52,7 +54,7 @@ Go ahead? [y/N] y
 Campaign is active. Pause any time: dewx campaigns pause
 ```
 
-If dewx.ai says no, you get its reason in plain words and nothing happens. The usual ones: LinkedIn is not connected, your balance is low, or no first message is approved yet (approve them in the app, then run `start` again).
+If dewx.ai says no, you get its reason in plain words and nothing happens. The usual ones: LinkedIn is not connected, your balance is low, or no first message is approved yet (`dewx messages approve`, then `start` again).
 
 ## Connect Claude and other AI tools
 
@@ -103,6 +105,10 @@ Claude Desktop says the server failed? It often cannot find `npx` when Node was 
 | `dewx leads import <file.csv>` | Adds a CSV in batches of 50. Understands name, first/last name, company, title, country or location, LinkedIn URL |
 | `dewx leads salesnav <link>` | Pulls people from a Sales Navigator search with your own LinkedIn. `--limit 200 --countries "United States"` |
 | `dewx jobs <id>` | Progress of a Sales Navigator pull |
+| `dewx messages` | Drafts waiting for you. `--approved` shows the approved ones not sent yet |
+| `dewx messages approve <id...>` | Approve (or `--all` for every draft with no flagged rule). Approving sends nothing by itself |
+| `dewx messages edit <id> "text"` | New text; checked again and approved only if it passes |
+| `dewx messages skip <id...>` | Hold back: they will not go unless approved again |
 | `dewx templates set` | `--note --m1 --m2` or `--file templates.json`. Variables use single braces: `{first_name}` `{company}` `{title}` |
 | `dewx inbox` | Your conversations. `--oldest` puts the people waiting on you first |
 | `dewx inbox read <id>` | One conversation, oldest message first |

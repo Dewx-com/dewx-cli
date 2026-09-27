@@ -49,4 +49,4 @@ Simpler, safer, and clear enough for a fifth grader.
 
 - Browser login (OAuth). The API uses tokens made in Settings today; a paste is one step and honest about what it is.
 - Self-update. `npx dewx` always runs the latest; `npm i -g dewx@latest` updates.
-- Reading templates back, approving drafts and changing the mode. The API does not offer the first two to tokens yet, and the mode is kept owner-only on purpose.
+- Reading templates back and changing the mode. The API does not offer the first to tokens yet, and the mode is kept owner-only on purpose.

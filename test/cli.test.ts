@@ -145,3 +145,23 @@ test('skills install copies every skill folder, after a yes', async () => {
   for (const n of ['dewx-write-messages', 'dewx-lead-research', 'dewx-list-builder', 'dewx-reply-handler'])
     assert.match(readFileSync(join(dest, n, 'SKILL.md'), 'utf8'), new RegExp(`^---\\nname: ${n}\\n`))
 })
+
+test('messages: list, approve --all takes only clean drafts, edit, skip', async () => {
+  const drafts = { status: 'draft', total: 2, messages: [
+    { id: 'm-clean', step: 'm1', text: 'Hi Ana,\nline', reasons: [], lead: { name: 'Ana', company: 'Acme' } },
+    { id: 'm-flag', step: 'm1', text: 'Hi Bo, quick call?', reasons: ['asks for a call'], lead: { name: 'Bo', company: 'Beta' } }] }
+  const s = loggedIn({ list_messages: () => drafts, approve_messages: a => ({ approved: a.approve ?? [], refused: [], skipped: a.skip ?? [],
+    edited: (a.edit ?? []).map((e: any) => ({ id: e.id, approved: true, reasons: [] })) }) })
+  assert.equal(await s.run('messages'), 0)
+  assert.match(s.out.join('\n'), /asks for a call[\s\S]*2 waiting for you/)
+  assert.equal(await s.run('messages', 'approve', '--all', '-y'), 0)
+  assert.deepEqual(s.api.calls().at(-1)!.arguments, { approve: ['m-clean'] })
+  assert.equal(await s.run('messages', 'edit', 'm-flag', 'Hi Bo,\\nnew words', '-y'), 0)
+  assert.deepEqual(s.api.calls().at(-1)!.arguments, { edit: [{ id: 'm-flag', text: 'Hi Bo,\nnew words' }] })
+  assert.match(s.out.join('\n'), /Saved and approved/)
+  assert.equal(await s.run('messages', 'skip', 'm-clean', '-y'), 0)
+  assert.deepEqual(s.api.calls().at(-1)!.arguments, { skip: ['m-clean'] })
+  const before = s.api.calls().length
+  assert.equal(await s.run('messages', 'approve', 'm-clean'), 2, 'no terminal, no --yes: refused')
+  assert.equal(s.api.calls().length, before)
+})
